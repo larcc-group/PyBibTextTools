@@ -7,10 +7,7 @@
 
 ## Libraries
 You need install this (and others)
-* pip install pybtex
-* pip install pandas
-* pip install argparse
-* pip install unidecode  
+* pip install -r requirements.txt
 
 
 ## SpringerCsv2Bib
