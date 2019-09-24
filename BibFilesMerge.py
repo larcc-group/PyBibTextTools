@@ -10,11 +10,11 @@ from pybtex.database import BibliographyData, Entry
 import unidecode
 import argparse
 
-mergedCont = 0
+mergedCount = 0
 
-# =============================================================
+
 def mergeEntry(original, novo):
-    global mergedCont
+    global mergedCount
     merged = False
 
     yearOut = int(str(original.rich_fields["year"]))
@@ -42,7 +42,7 @@ def mergeEntry(original, novo):
         merged = True
 
     if merged:
-        mergedCont = mergedCont + 1
+        mergedCount = mergedCount + 1
 
     return original
 
@@ -60,7 +60,7 @@ def getEntryAuthorStr(entry):
     if "author" in entry.persons:
         author = " and ".join(
             [
-                "".join(p.last()) + ", " + "".join(p.first())
+                "".join(p.last_names) + ", " + "".join(p.first_names)
                 for p in entry.persons["author"]
             ]
         )
@@ -110,9 +110,53 @@ def getEntryAbstractStr(entry):
     return abstract
 
 
-# =============================================================
-def run(folderPath, fileList, fileNameOut, logProcess):
-    global mergedCont
+def isDuplicated(entryOut, entry):
+    if entryOut.fields["title"].lower() == entry.fields["title"].lower():
+        year = int(str(entry.rich_fields["year"]))
+        yearOut = int(str(entryOut.rich_fields["year"]))
+        diff = abs(year - yearOut)
+        if diff == 0:
+            return True
+        elif diff == 1 or diff == 2:
+            try:
+                lastname = unidecode.unidecode(
+                    entry.persons["author"][0].last_names[0]
+                ).lower()
+            except:
+                lastname = ""
+
+            try:
+                lastNameOut = unidecode.unidecode(
+                    entryOut.persons["author"][0].last_names[0]
+                ).lower()
+            except:
+                lastNameOut = ""
+
+            try:
+                firstName = unidecode.unidecode(
+                    entry.persons["author"][0].firstNames[0]
+                ).lower()
+            except:
+                firstName = ""
+
+            try:
+                firstNameOut = unidecode.unidecode(
+                    entryOut.persons["author"][0].firstNames[0]
+                ).lower()
+            except:
+                firstNameOut = ""
+
+            if (
+                lastname == lastNameOut
+                or lastname == firstNameOut
+                or lastNameOut == firstName
+            ):
+                return True
+    return False
+
+
+def run(folderPath, fileList, fileNameOut, excludeList, logProcess):
+    global mergedCount
 
     if logProcess:
         fRemoved = open(os.path.join(folderPath, "BibFilesMerge_removed.csv"), "w")
@@ -125,16 +169,19 @@ def run(folderPath, fileList, fileNameOut, logProcess):
     bibDataOut = BibliographyData()
 
     total = 0
-    mergedCont = 0
+    mergedCount = 0
     withoutAuthor = 0
     withoutYear = 0
     withoutJornal = 0
     duplicates = 0
+    excludedFromBib = 0
+
+    bibDatoToExclude = {}
 
     for bibFileName in fileList:
-        print(bibFileName, "                                             ")
+        print(bibFileName)
 
-        bibData = parse_file(os.path.join(folderPath, bibFileName))
+        bibData = parse_file(bibFileName)
 
         for entry in bibData.entries.values():
             total = total + 1
@@ -145,6 +192,24 @@ def run(folderPath, fileList, fileNameOut, logProcess):
                 year = getEntryYearStr(entry)
                 title = getEntryTitleStr(entry)
                 publish = getEntryPublishStr(entry)
+
+            foundEntryToExclude = False
+            for bibFileName in excludeList:
+                if bibFileName not in bibDatoToExclude:
+                    bibData = parse_file(bibFileName)
+                    bibDatoToExclude[bibFileName] = bibData.entries.values()
+
+                for entryExclude in bibDatoToExclude[bibFileName]:
+                    if isDuplicated(entryExclude, entry):
+                        excludedFromBib += 1
+                        foundEntryToExclude = True
+                        break
+
+                if foundEntryToExclude:
+                    break
+
+            if foundEntryToExclude:
+                continue
 
             if not "author" in entry.persons:
                 withoutAuthor = withoutAuthor + 1
@@ -162,7 +227,6 @@ def run(folderPath, fileList, fileNameOut, logProcess):
                             publish,
                         )
                     )
-
             elif (
                 not "year" in entry.fields
                 or not str(entry.rich_fields["year"])
@@ -183,7 +247,6 @@ def run(folderPath, fileList, fileNameOut, logProcess):
                             publish,
                         )
                     )
-
             elif (not "journal" in entry.fields) and (not "booktitle" in entry.fields):
                 withoutJornal = withoutJornal + 1
                 if logProcess:
@@ -200,59 +263,18 @@ def run(folderPath, fileList, fileNameOut, logProcess):
                             publish,
                         )
                     )
-
             else:
                 key = entry.key.lower()
-                print("Key " + key + "               \r", end="", flush=True)
+                print(
+                    "Key " + key + "                            \r", end="", flush=True
+                )
 
                 entry.fields["source"] = bibFileName
                 oldEntry = None
 
                 for entryOut in bibDataOut.entries.values():
-                    if (
-                        entryOut.fields["title"].lower()
-                        == entry.fields["title"].lower()
-                    ):
-                        year = int(str(entry.rich_fields["year"]))
-                        yearOut = int(str(entryOut.rich_fields["year"]))
-                        diff = abs(year - yearOut)
-                        if diff == 0:
-                            oldEntry = entryOut
-                        elif diff == 1 or diff == 2:
-                            try:
-                                lastname = unidecode.unidecode(
-                                    entry.persons["author"][0].last_names[0]
-                                ).lower()
-                            except:
-                                lastname = ""
-
-                            try:
-                                lastNameOut = unidecode.unidecode(
-                                    entryOut.persons["author"][0].last_names[0]
-                                ).lower()
-                            except:
-                                lastNameOut = ""
-
-                            try:
-                                firstName = unidecode.unidecode(
-                                    entry.persons["author"][0].firstNames[0]
-                                ).lower()
-                            except:
-                                firstName = ""
-
-                            try:
-                                firstNameOut = unidecode.unidecode(
-                                    entryOut.persons["author"][0].firstNames[0]
-                                ).lower()
-                            except:
-                                firstNameOut = ""
-
-                            if (
-                                lastname == lastNameOut
-                                or lastname == firstNameOut
-                                or lastNameOut == firstName
-                            ):
-                                oldEntry = entryOut
+                    if isDuplicated(entryOut, entry):
+                        oldEntry = entryOut
 
                 if oldEntry != None:
                     duplicates = duplicates + 1
@@ -298,14 +320,15 @@ def run(folderPath, fileList, fileNameOut, logProcess):
                     bibDataOut.entries[key] = entry
 
     print("                                                     ")
-    print("Total: ", total)
+    print("Total:", total)
 
-    print("without Author: ", withoutAuthor)
-    print("without Year: ", withoutYear)
-    print("Without jornal or conference or booktitle: ", withoutJornal)
+    print("without Author:", withoutAuthor)
+    print("without Year:", withoutYear)
+    print("Without jornal or conference or booktitle:", withoutJornal)
 
-    print("Duplicates: ", duplicates, ", merged: ", mergedCont)
-    print("Final: ", len(bibDataOut.entries))
+    print("Duplicates:", duplicates, ", merged:", mergedCount)
+    print("Excluded from bib:", excludedFromBib)
+    print("Final:", len(bibDataOut.entries))
 
     withoutAbstractList = {i: 0 for i in fileList}
     withoutAbstract = 0
@@ -331,7 +354,7 @@ def run(folderPath, fileList, fileNameOut, logProcess):
                 withoutAbstractList[entry.fields["source"]] + 1
             )
 
-    print("Without abstract: ", withoutAbstract, withoutAbstractList)
+    print("Without abstract:", withoutAbstract, withoutAbstractList)
 
     bibDataOut.to_file(fileNamePathOut)
 
@@ -340,8 +363,6 @@ def run(folderPath, fileList, fileNameOut, logProcess):
         fFinal.close()
 
 
-# =============================================================================
-# construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-p", "--folderPath", required=True, help="Bib files folder path")
 ap.add_argument(
@@ -349,14 +370,21 @@ ap.add_argument(
     "--fileList",
     nargs="*",
     required=False,
-    help="bib file name list, e.g. -files IEEE.bib ACM.bib science.bib Springer.bib",
+    help="bib file name list, e.g. -f IEEE.bib ACM.bib science.bib Springer.bib",
 )
 ap.add_argument("-o", "--fileNameOut", required=False, help="File name of merged file")
+ap.add_argument(
+    "-e",
+    "--exclude",
+    nargs="*",
+    required=False,
+    help=" bib with entries to be removed from others, e.g. -e FirstExecution.bib SecondExecution.bib",
+)
 ap.add_argument(
     "-l",
     "--logProcess",
     required=False,
-    help="Log processing to csv files",
+    help="Log processing to CSV files",
     action="store_true",
 )
 
@@ -365,11 +393,14 @@ args = vars(ap.parse_args())
 print("--folderPath\t", args["folderPath"])
 print("--fileNameOut\t", args["fileNameOut"])
 print("--fileList\t", args["fileList"])
+print("--exclude\t", args["exclude"])
 print("--logProcess\t", args["logProcess"])
+print("")
 
-run(args["folderPath"], args["fileList"], args["fileNameOut"], args["logProcess"])
-
-# python BibFilesMerge.py -p "Revisao\resultados pesquisas" -o "MyFile.bib" -f IEEE.bib ACM.bib science.bib Springer.bib
-
-# python BibFilesMerge.py -p "Revisao\resultados pesquisas" -f IEEE.bib ACM.bib science.bib Springer.bib -o "MyFile.bib"
-
+run(
+    args["folderPath"],
+    args["fileList"],
+    args["fileNameOut"],
+    args["exclude"],
+    args["logProcess"],
+)
