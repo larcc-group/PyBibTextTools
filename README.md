@@ -120,35 +120,49 @@ This tool has been tested with these digital library files:
 ```console
 foo@bar:~$ python BibFilesMerge.py -h
 usage: BibFilesMerge.py [-h] -p FOLDERPATH [-f [FILELIST [FILELIST ...]]]
-                        [-o FILENAMEOUT] [-l]
+                        [-o FILENAMEOUT] [-e [EXCLUDE [EXCLUDE ...]]] [-l]
 
 optional arguments:
   -h, --help            show this help message and exit
   -p FOLDERPATH, --folderPath FOLDERPATH
                         Bib files folder path
   -f [FILELIST [FILELIST ...]], --fileList [FILELIST [FILELIST ...]]
-                        bib file name list, e.g. -files IEEE.bib ACM.bib
+                        bib file name list, e.g. -f IEEE.bib ACM.bib
                         science.bib Springer.bib
   -o FILENAMEOUT, --fileNameOut FILENAMEOUT
                         File name of merged file
-  -l, --logProcess      Log processing to csv files
+  -e [EXCLUDE [EXCLUDE ...]], --exclude [EXCLUDE [EXCLUDE ...]]
+                        bib with entries to be removed from others, e.g. -e
+                        FirstExecution.bib SecondExecution.bib
+  -l, --logProcess      Log processing to CSV files
 ```
 
 ### Example
 
 ```console
-foo@bar:~$ python BibFilesMerge.py -p <OUTPUT_FOLDER> -o MyFile.bib -f IEEE.bib ACM.bib science.bib Springer.bib scopus.bib -l
+foo@bar:~$ python BibFilesMerge.py -p output/ -o 2019-2.bib -f 2019-2/ScienceDirect1.bib 2019-2/ScienceDirect2.bib 2019-2/Scopus.bib -e 2018/ACM.bib 2018/IEEE.bib 2018/ScienceDirect.bib 2018/SCOPUS.bib 2019/ACM.bib 2019/IEEE.bib 2019/ScienceDirect1.bib 2019/ScienceDirect2.bib 2019/SCOPUS.bib -l
 
-Total: 3253
-without Author: 65
+--folderPath     output/
+--fileNameOut    2019-2.bib
+--fileList       ['2019-2/ScienceDirect1.bib', '2019-2/ScienceDirect2.bib', '2019-2/Scopus.bib']
+--exclude        ['2018/ACM.bib', '2018/IEEE.bib', '2018/ScienceDirect.bib', '2018/SCOPUS.bib', '2019/ACM.bib', '2019/IEEE.bib', '2019/ScienceDirect1.bib', '2019/ScienceDirect2.bib', '2019/SCOPUS.bib']
+--logProcess     True
+
+2019-2/ScienceDirect1.bib
+2019-2/ScienceDirect2.bib                                  
+2019-2/Scopus.bib                                   
+                                                       
+Total: 798
+without Author: 0
 without Year: 0
-without Jornal or conference or booktitle: 76
-Duplicates: 842, merged: 833
-Final: 2270
-Without abstract: 746
+Without jornal or conference or booktitle: 0
+Duplicates: 31 , merged: 25
+Excluded from bib: 537
+Final: 230
+Without abstract: 0 {'2019-2/ScienceDirect1.bib': 0, '2019-2/ScienceDirect2.bib': 0, '2019-2/Scopus.bib': 0}
 ```
 
-The two CSV files created on `<OUTPUT_FOLDER>` by the `-l` switch are:
+The two CSV files created on `output` folder by the `-l` switch are:
 - `BibFilesMerge_removed.csv`, with columns cause, source, key, doi, author, year, title and publish
 - cause is one of: no author, no year, no journal, duplicate of next or duplicate of prev
 - `BibFilesMerge_final.csv`, with columns key, doi, author, year, title, publish and abstract
@@ -158,11 +172,14 @@ The two CSV files created on `<OUTPUT_FOLDER>` by the `-l` switch are:
 Sometimes errors occur while reading the bib file. In this case, note at the end of the error line of the bib file. Then edit the bib file and adjust the error. For example:
 
 ```console
-foo@bar:~$ python BibFilesMerge.py -p "results" -f IEEE.bib ACM.bib science.bib Springer.bib -o "MyFile.bib"
+foo@bar:~$ python BibFilesMerge.py -p results -f IEEE.bib ACM.bib science.bib Springer.bib -o MyFile.bib
 
--p  results
--o  MyFile.bib
--f  ['IEEE.bib', 'ACM.bib', 'science.bib', 'Springer.bib']
+--folderPath     results
+--fileNameOut    MyFile.bib
+--fileList       ['IEEE.bib', 'ACM.bib', 'science.bib', 'Springer.bib']
+--exclude        None
+--logProcess     False
+
 IEEE.bib
 ACM.bib
 science.bib
