@@ -23,7 +23,7 @@ import tempfile
 #     return type_tmp
 
 
-def AuthorFix(author_tmp):
+def authorFix(author_tmp):
     # Problems with Spring CSV.
 
     """
@@ -102,7 +102,7 @@ def run(csvFileName, bibFileName):
         if not pd.isnull(row.url):
             fields.append(("url", row.url))
         if not pd.isnull(row.author):
-            fields.append(("author", AuthorFix(row.author)))
+            fields.append(("author", authorFix(row.author)))
 
         keyPaper = row.doi
         typePaper = row.type  # TypePaperSelect(row.type)
