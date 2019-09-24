@@ -13,14 +13,14 @@ import unidecode
 from shutil import copyfile
 import tempfile
 
-
-def TypePaperSelect(type_tmp):
-    typePaper = "InProceedings"
-    if type_tmp == "Article":
-        typePaper = "article"
-    elif type_tmp == "Chapter":
-        typePaper = "InProceedings"
-    return type_tmp
+# Unnecessary function.
+# def TypePaperSelect(type_tmp):
+#     typePaper = "InProceedings"
+#     if type_tmp == "Article":
+#         typePaper = "article"
+#     elif type_tmp == "Chapter":
+#         typePaper = "InProceedings"
+#     return type_tmp
 
 
 def AuthorFix(author_tmp):
@@ -105,7 +105,7 @@ def run(csvFileName, bibFileName):
             fields.append(("author", AuthorFix(row.author)))
 
         keyPaper = row.doi
-        typePaper = TypePaperSelect(row.type)
+        typePaper = row.type  # TypePaperSelect(row.type)
         print("Chave " + keyPaper + "               \r", end="", flush=True)
 
         if pd.isnull(row.author):
