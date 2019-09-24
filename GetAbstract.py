@@ -13,7 +13,6 @@ import re
 import argparse
 
 
-# =============================================================
 def run(database, bibFileName, proxy, limit):
 
     print("=========================================")
@@ -63,7 +62,7 @@ def run(database, bibFileName, proxy, limit):
 
             try:
                 if not proxy == None:
-                    # use Proxy
+                    # Use proxy.
                     proxy_handler = urllib.request.ProxyHandler({"https": proxy})
                     opener = urllib.request.build_opener(proxy_handler)
                     urllib.request.install_opener(opener)
@@ -140,8 +139,6 @@ def run(database, bibFileName, proxy, limit):
     bibData.to_file(bibFileName)
 
 
-# =============================================================================
-# construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument(
     "-d",
@@ -158,7 +155,6 @@ ap.add_argument(
     required=False,
     help="internet proxy, ex: https://john:password123@palmas.pucrs.br:4001",
 )
-
 ap.add_argument(
     "-l", "--limit", required=False, help="abstract load limit", default=9999, type=int
 )
@@ -166,4 +162,3 @@ ap.add_argument(
 args = vars(ap.parse_args())
 
 run(args["database"], args["bibFileName"], args["proxy"], args["limit"])
-

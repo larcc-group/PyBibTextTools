@@ -13,7 +13,7 @@ import unidecode
 from shutil import copyfile
 import tempfile
 
-# =============================================================
+
 def TypePaperSelect(type_tmp):
     typePaper = "InProceedings"
     if type_tmp == "Article":
@@ -23,14 +23,14 @@ def TypePaperSelect(type_tmp):
     return type_tmp
 
 
-# =============================================================
 def AuthorFix(author_tmp):
+    # Problems with Spring CSV.
 
-    # problems with spring CSV
-
-    # "Sergey Ablameyko PhD, DSc, Prof, FIEE, FIAPR, SMIEEETony Pridmore BSc, PhD"
-    # correct is
-    # "Sergey Ablameyko and Tony Pridmore"
+    """
+    "Sergey Ablameyko PhD, DSc, Prof, FIEE, FIAPR, SMIEEETony Pridmore BSc, PhD"
+    correct is
+    "Sergey Ablameyko and Tony Pridmore"
+    """
     author_tmp = author_tmp.replace(",", " ")
     author_tmp = author_tmp.replace("PhD", "")
     author_tmp = author_tmp.replace("DSc", "")
@@ -40,9 +40,11 @@ def AuthorFix(author_tmp):
     author_tmp = author_tmp.replace("SMIEEE", "")
     author_tmp = author_tmp.replace("  ", " ")
 
-    # "Yingying ZhuCong YaoXiang Bai"
-    # correct is
-    # "Yingying Zhu and Cong Yao and Xiang Bai"
+    """
+    "Yingying ZhuCong YaoXiang Bai"
+    correct is
+    "Yingying Zhu and Cong Yao and Xiang Bai"
+    """
     last_word_isalpha = False
     author = ""
     for word in author_tmp:
@@ -55,14 +57,12 @@ def AuthorFix(author_tmp):
     return author
 
 
-# =============================================================
 def run(csvFileName, bibFileName):
-
     if not os.path.isfile(csvFileName):
         print("File not found: ", csvFileName)
         return
 
-    # I dont kown Why, but dont work complex path in Panda, then I copy file to local path
+    # I dont kown Why, but dont work complex path in Panda, then I copy file to local path.
     tmpFile = tempfile.mktemp()
     copyfile(csvFileName, tmpFile)
 
@@ -106,7 +106,6 @@ def run(csvFileName, bibFileName):
 
         keyPaper = row.doi
         typePaper = TypePaperSelect(row.type)
-
         print("Chave " + keyPaper + "               \r", end="", flush=True)
 
         if pd.isnull(row.author):
@@ -122,8 +121,6 @@ def run(csvFileName, bibFileName):
     print("Saved file: ", bibFileName)
 
 
-# =============================================================================
-# construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-c", "--csvFileName", required=True, help="CSV file name")
 ap.add_argument("-b", "--bibFileName", required=True, help="BibText file name")
