@@ -152,14 +152,15 @@ foo@bar:~$ python BibFilesMerge.py -p output/ -o 2019-2.bib -f 2019-2/ScienceDir
 2019-2/ScienceDirect2.bib                                  
 2019-2/Scopus.bib                                   
                                                        
-Total: 798
-without Author: 0
-without Year: 0
-Without jornal or conference or booktitle: 0
-Duplicates: 31 , merged: 25
-Excluded from bib: 537
-Final: 230
-Without abstract: 0 {'2019-2/ScienceDirect1.bib': 0, '2019-2/ScienceDirect2.bib': 0, '2019-2/Scopus.bib': 0}
+Total:                   798
+No Author:               0
+No Year:                 0
+No Publisher:            0
+Duplicates:              31
+Merged:                  25
+Excluded from bib:       537
+Final:                   230
+without Abstract:        0 {'2019-2/ScienceDirect1.bib': 0, '2019-2/ScienceDirect2.bib': 0, '2019-2/Scopus.bib': 0}
 ```
 
 The two CSV files created on `output` folder by the `-l` switch are:
