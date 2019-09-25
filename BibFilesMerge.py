@@ -4,11 +4,15 @@ import os
 import sys
 
 sys.path.insert(0, "./pybtex/")
-from pybtex.database import parse_file
-from pybtex.database import BibliographyData, Entry
 
+from pybtex.database import parse_file, parse_string
+from pybtex.database import BibliographyData, Entry, BibliographyDataError
+import random
 import unidecode
 import argparse
+import csv
+from html import unescape
+
 
 mergedCount = 0
 
@@ -36,23 +40,20 @@ def mergeEntry(original, novo):
         abs2 = novo.fields["abstract"]
     if len(abs2) > len(abs1):
         original.fields["abstract"] = novo.fields["abstract"]
-        original.fields["source"] = (
-            original.fields["source"] + ";" + novo.fields["source"]
-        )
         merged = True
 
     if merged:
-        mergedCount = mergedCount + 1
+        mergedCount += 1
+
+    original.fields["source"] = original.fields["source"] + ";" + novo.fields["source"]
 
     return original
 
 
-# =============================================================
 def getEntryDOIStr(entry):
-    doi = ""
     if "doi" in entry.fields:
-        doi = str(entry.rich_fields["doi"])
-    return doi
+        return str(entry.rich_fields["doi"]).replace("https://doi.org/", "")
+    return ""
 
 
 def getEntryAuthorStr(entry):
@@ -70,7 +71,9 @@ def getEntryAuthorStr(entry):
 def getEntryYearStr(entry):
     year = ""
     if "year" in entry.fields:
-        year = str(entry.rich_fields["year"])
+        year = int(str(entry.rich_fields["year"]))
+        if year == 0:
+            year = ""
     return year
 
 
@@ -100,18 +103,46 @@ def getEntryPublishStr(entry):
         publish = capwords(publish)
     elif "publisher" in entry.fields:
         publish = str(entry.rich_fields["publisher"])
+    elif "arxivId" in entry.fields:
+        publish = "arXiv"
     return publish
 
 
 def getEntryAbstractStr(entry):
     abstract = ""
     if "abstract" in entry.fields:
-        abstract = str(entry.rich_fields["abstract"])
+        abstract = entry.fields["abstract"]
+    if abstract != "":
+        abstract = unescape(abstract).replace("\\%", "%")
     return abstract
 
 
-def isDuplicated(entryOut, entry):
-    if entryOut.fields["title"].lower() == entry.fields["title"].lower():
+def cleanStringToCompare(xStr):
+    return (
+        xStr.lower()
+        .replace(" ", "")
+        .replace(".", "")
+        .replace(",", "")
+        .replace("-", "")
+        .replace(":", "")
+        .replace("/", "")
+        .replace("\\", "")
+        .replace("'", "")
+        .replace("`", "")
+    )
+
+
+def isDuplicated(entryOut, entry, verify_doi=False):
+    if verify_doi:
+        doi = getEntryDOIStr(entry)
+        if doi:
+            doiOut = getEntryDOIStr(entryOut)
+            if doiOut and doi == doiOut:
+                return True
+
+    if cleanStringToCompare(entryOut.fields["title"].lower()) == cleanStringToCompare(
+        entry.fields["title"].lower()
+    ):
         year = int(str(entry.rich_fields["year"]))
         yearOut = int(str(entryOut.rich_fields["year"]))
         diff = abs(year - yearOut)
@@ -159,10 +190,20 @@ def run(folderPath, fileList, fileNameOut, excludeList, logProcess):
     global mergedCount
 
     if logProcess:
-        fRemoved = open(os.path.join(folderPath, "BibFilesMerge_removed.csv"), "w")
-        fRemoved.write("cause;source;key;doi;author;year;title;publish\n")
-        fFinal = open(os.path.join(folderPath, "BibFilesMerge_final.csv"), "w")
-        fFinal.write("key;doi;author;year;title;publish;abstract\n")
+        fRemoved = open(
+            os.path.join(folderPath, "BibFilesMerge_removed.csv"), "w", encoding="utf-8"
+        )
+        csvRemoved = csv.writer(fRemoved, delimiter=";", quotechar='"')
+        csvRemoved.writerow(
+            ["cause", "source", "key", "doi", "author", "year", "title", "publish"]
+        )
+        fFinal = open(
+            os.path.join(folderPath, "BibFilesMerge_final.csv"), "w", encoding="utf-8"
+        )
+        csvFinal = csv.writer(fFinal, delimiter=";", quotechar='"')
+        csvFinal.writerow(
+            ["key", "source", "doi", "author", "year", "title", "publish", "abstract"]
+        )
 
     fileNamePathOut = os.path.join(folderPath, fileNameOut)
 
@@ -179,156 +220,196 @@ def run(folderPath, fileList, fileNameOut, excludeList, logProcess):
     bibDatoToExclude = {}
 
     for bibFileName in fileList:
-        print(bibFileName)
+        with open(bibFileName, "r") as bibFile:
+            fileData = bibFile.read()
 
-        bibData = parse_file(bibFileName)
-
-        for entry in bibData.entries.values():
-            total = total + 1
-
-            if logProcess:
-                doi = getEntryDOIStr(entry)
-                author = getEntryAuthorStr(entry)
-                year = getEntryYearStr(entry)
-                title = getEntryTitleStr(entry)
-                publish = getEntryPublishStr(entry)
-
-            foundEntryToExclude = False
-            for bibFileName in excludeList:
-                if bibFileName not in bibDatoToExclude:
-                    bibData = parse_file(bibFileName)
-                    bibDatoToExclude[bibFileName] = bibData.entries.values()
-
-                for entryExclude in bibDatoToExclude[bibFileName]:
-                    if isDuplicated(entryExclude, entry):
-                        excludedFromBib += 1
-                        foundEntryToExclude = True
-                        break
-
-                if foundEntryToExclude:
-                    break
-
-            if foundEntryToExclude:
-                continue
-
-            if not "author" in entry.persons:
-                withoutAuthor = withoutAuthor + 1
-                if logProcess:
-                    # cause;source;key;doi;author;year;title;publish
-                    fRemoved.write(
-                        "{};{};{};{};{};{};{};{}\n".format(
-                            "no author",
-                            bibFileName,
-                            entry.key,
-                            doi,
-                            author,
-                            year,
-                            title,
-                            publish,
-                        )
-                    )
-            elif (
-                not "year" in entry.fields
-                or not str(entry.rich_fields["year"])
-                or int(str(entry.rich_fields["year"])) == 0
-            ):
-                withoutYear = withoutYear + 1
-                if logProcess:
-                    # cause;source;key;doi;author;year;title;publish
-                    fRemoved.write(
-                        "{};{};{};{};{};{};{};{}\n".format(
-                            "no year",
-                            bibFileName,
-                            entry.key,
-                            doi,
-                            author,
-                            year,
-                            title,
-                            publish,
-                        )
-                    )
-            elif (not "journal" in entry.fields) and (not "booktitle" in entry.fields):
-                withoutJornal = withoutJornal + 1
-                if logProcess:
-                    # cause;source;key;doi;author;year;title;publish
-                    fRemoved.write(
-                        "{};{};{};{};{};{};{};{}\n".format(
-                            "no journal",
-                            bibFileName,
-                            entry.key,
-                            doi,
-                            author,
-                            year,
-                            title,
-                            publish,
-                        )
-                    )
-            else:
-                key = entry.key.lower()
+        loop = True
+        while loop:
+            loop = False
+            try:
+                bibData = parse_string(fileData, None)
                 print(
-                    "Key " + key + "                            \r", end="", flush=True
+                    bibFileName + ":",
+                    len(bibData.entries.values()),
+                    "                                             ",
                 )
 
-                entry.fields["source"] = bibFileName
-                oldEntry = None
+                for entry in bibData.entries.values():
+                    total += 1
 
-                for entryOut in bibDataOut.entries.values():
-                    if isDuplicated(entryOut, entry):
-                        oldEntry = entryOut
+                    doi = getEntryDOIStr(entry)
+                    author = getEntryAuthorStr(entry)
+                    year = getEntryYearStr(entry)
+                    title = getEntryTitleStr(entry)
+                    publish = getEntryPublishStr(entry)
 
-                if oldEntry != None:
-                    duplicates = duplicates + 1
+                    foundEntryToExclude = False
+                    for bibFileName in excludeList:
+                        if bibFileName not in bibDatoToExclude:
+                            bibData = parse_file(bibFileName)
+                            bibDatoToExclude[bibFileName] = bibData.entries.values()
 
-                    if logProcess:
-                        # cause;source;key;doi;author;year;title;publish
-                        fRemoved.write(
-                            "{};{};{};{};{};{};{};{}\n".format(
-                                "duplicate of next",
-                                bibFileName,
-                                entry.key,
-                                doi,
-                                author,
-                                year,
-                                title,
-                                publish,
+                        for entryExclude in bibDatoToExclude[bibFileName]:
+                            if isDuplicated(entryExclude, entry):
+                                excludedFromBib += 1
+                                foundEntryToExclude = True
+                                break
+
+                        if foundEntryToExclude:
+                            break
+
+                    if foundEntryToExclude:
+                        continue
+
+                    if not author:
+                        withoutAuthor += 1
+                        if logProcess:
+                            # cause;source;key;doi;author;year;title;publish
+                            csvRemoved.writerow(
+                                [
+                                    "no author",
+                                    bibFileName,
+                                    entry.key,
+                                    doi,
+                                    author,
+                                    year,
+                                    title,
+                                    publish,
+                                ]
                             )
+                    elif not year:
+                        withoutYear = withoutYear + 1
+                        if logProcess:
+                            # cause;source;key;doi;author;year;title;publish
+                            csvRemoved.writerow(
+                                [
+                                    "no year",
+                                    bibFileName,
+                                    entry.key,
+                                    doi,
+                                    author,
+                                    year,
+                                    title,
+                                    publish,
+                                ]
+                            )
+                    elif not publish:
+                        withoutJornal = withoutJornal + 1
+                        if logProcess:
+                            # cause;source;key;doi;author;year;title;publish
+                            csvRemoved.writerow(
+                                [
+                                    "no journal",
+                                    bibFileName,
+                                    entry.key,
+                                    doi,
+                                    author,
+                                    year,
+                                    title,
+                                    publish,
+                                ]
+                            )
+                    else:
+                        key = entry.key.lower()
+                        print(
+                            "Key " + key + "                        \r",
+                            end="",
+                            flush=True,
                         )
 
-                        doi = getEntryDOIStr(oldEntry)
-                        author = getEntryAuthorStr(oldEntry)
-                        year = getEntryYearStr(oldEntry)
-                        title = getEntryTitleStr(oldEntry)
-                        publish = getEntryPublishStr(oldEntry)
-                        fRemoved.write(
-                            "{};{};{};{};{};{};{};{}\n".format(
-                                "duplicate of prev",
-                                oldEntry.fields["source"],
-                                oldEntry.key,
-                                doi,
-                                author,
-                                year,
-                                title,
-                                publish,
+                        entry.fields["source"] = bibFileName
+                        oldEntry = None
+
+                        for entryOut in bibDataOut.entries.values():
+                            if isDuplicated(entryOut, entry, True):
+                                oldEntry = entryOut
+                                break
+
+                        if oldEntry != None:
+                            duplicates += 1
+
+                            if logProcess:
+                                # cause;source;key;doi;author;year;title;publish
+                                csvRemoved.writerow(
+                                    [
+                                        "duplicate of next",
+                                        bibFileName,
+                                        entry.key,
+                                        doi,
+                                        author,
+                                        year,
+                                        title,
+                                        publish,
+                                    ]
+                                )
+
+                                doi = getEntryDOIStr(oldEntry)
+                                author = getEntryAuthorStr(oldEntry)
+                                year = getEntryYearStr(oldEntry)
+                                title = getEntryTitleStr(oldEntry)
+                                publish = getEntryPublishStr(oldEntry)
+                                csvRemoved.writerow(
+                                    [
+                                        "duplicate of prev",
+                                        oldEntry.fields["source"],
+                                        oldEntry.key,
+                                        doi,
+                                        author,
+                                        year,
+                                        title,
+                                        publish,
+                                    ]
+                                )
+
+                            bibDataOut.entries[oldEntry.key] = mergeEntry(
+                                oldEntry, entry
                             )
-                        )
+                        else:
+                            while key in bibDataOut.entries.keys():
+                                key = key + "_a"
+                            bibDataOut.entries[key] = entry
+            except BibliographyDataError as ex:
+                repeatedKey = ex.args[0].replace("repeated bibliograhpy entry: ", "")
 
-                    bibDataOut.entries[oldEntry.key] = mergeEntry(oldEntry, entry)
+                if repeatedKey != None and repeatedKey:
+                    newKeyFirst = repeatedKey + "_" + str(random.randint(1, 101))
+                    fileData = fileData.replace(repeatedKey + ",", newKeyFirst + ",", 1)
+                    newKeySecond = repeatedKey + "_" + str(random.randint(1, 101))
+                    fileData = fileData.replace(
+                        repeatedKey + ",", newKeySecond + ",", 1
+                    )
 
-                else:
-                    while key in bibDataOut.entries.keys():
-                        key = key + "_a"
-                    bibDataOut.entries[key] = entry
+                    print(
+                        bibFileName + ": repeatedKey",
+                        repeatedKey,
+                        "replaced by",
+                        newKeyFirst,
+                        "and",
+                        newKeySecond,
+                    )
+
+                    loop = True
+
+                    with open(
+                        os.path.join(
+                            os.path.dirname(os.path.abspath(bibFileName)),
+                            "fix_" + os.path.basename(bibFileName),
+                        ),
+                        "w+",
+                    ) as bibFile:
+                        bibFile.write(fileData)
 
     print("                                                     ")
-    print("Total:", total)
+    print("Total:\t\t\t", total)
 
-    print("without Author:", withoutAuthor)
-    print("without Year:", withoutYear)
-    print("Without jornal or conference or booktitle:", withoutJornal)
+    print("No Author:\t\t", withoutAuthor)
+    print("No Year:\t\t", withoutYear)
+    print("No Publisher:\t\t", withoutJornal)
 
-    print("Duplicates:", duplicates, ", merged:", mergedCount)
-    print("Excluded from bib:", excludedFromBib)
-    print("Final:", len(bibDataOut.entries))
+    print("Duplicates:\t\t", duplicates)
+    print("Merged:\t\t\t", mergedCount)
+    print("Excluded from bib:\t", excludedFromBib)
+    print("Final:\t\t\t", len(bibDataOut.entries))
 
     withoutAbstractList = {i: 0 for i in fileList}
     withoutAbstract = 0
@@ -341,11 +422,18 @@ def run(folderPath, fileList, fileNameOut, excludeList, logProcess):
             publish = getEntryPublishStr(entry)
             abstract = getEntryAbstractStr(entry)
 
-            # key;doi;author;year;title;publish;abstract
-            fFinal.write(
-                "{};{};{};{};{};{};{}\n".format(
-                    entry.key, doi, author, year, title, publish, abstract
-                )
+            # key;source;doi;author;year;title;publish;abstract
+            csvFinal.writerow(
+                [
+                    entry.key,
+                    entry.fields["source"],
+                    doi,
+                    author,
+                    year,
+                    title,
+                    publish,
+                    abstract,
+                ]
             )
 
         if not "abstract" in entry.fields:
@@ -354,7 +442,7 @@ def run(folderPath, fileList, fileNameOut, excludeList, logProcess):
                 withoutAbstractList[entry.fields["source"]] + 1
             )
 
-    print("Without abstract:", withoutAbstract, withoutAbstractList)
+    print("without Abstract ", withoutAbstract, withoutAbstractList)
 
     bibDataOut.to_file(fileNamePathOut)
 
