@@ -442,8 +442,7 @@ def run(folderPath, fileList, fileNameOut, excludeList, logProcess):
                 withoutAbstractList[entry.fields["source"]] + 1
             )
 
-    print("without Abstract ", withoutAbstract, withoutAbstractList)
-
+    print("without Abstract:\t", withoutAbstract, withoutAbstractList)
     bibDataOut.to_file(fileNamePathOut)
 
     if logProcess:
