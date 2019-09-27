@@ -23,7 +23,7 @@ import tempfile
 #     return type_tmp
 
 
-def authorFix(author_tmp):
+def author_fix(author_tmp):
     # Problems with Spring CSV.
 
     """
@@ -57,14 +57,14 @@ def authorFix(author_tmp):
     return author
 
 
-def run(csvFileName, bibFileName):
-    if not os.path.isfile(csvFileName):
-        print("File not found: ", csvFileName)
+def run(csv_file_name, bib_file_name):
+    if not os.path.isfile(csv_file_name):
+        print("File not found: ", csv_file_name)
         return
 
     # I dont kown Why, but dont work complex path in Panda, then I copy file to local path.
-    tmpFile = tempfile.mktemp()
-    copyfile(csvFileName, tmpFile)
+    tmp_file = tempfile.mktemp()
+    copyfile(csv_file_name, tmp_file)
 
     colnames = [
         "title",
@@ -78,11 +78,11 @@ def run(csvFileName, bibFileName):
         "url",
         "type",
     ]
-    pn = pd.read_csv(tmpFile, names=colnames, skiprows=1)
+    pn = pd.read_csv(tmp_file, names=colnames, skiprows=1)
 
-    bibData = BibliographyData()
+    bib_data = BibliographyData()
     total = 0
-    notAuthor = 0
+    not_author = 0
 
     for row_index, row in pn.iterrows():
         total = total + 1
@@ -102,23 +102,23 @@ def run(csvFileName, bibFileName):
         if not pd.isnull(row.url):
             fields.append(("url", row.url))
         if not pd.isnull(row.author):
-            fields.append(("author", authorFix(row.author)))
+            fields.append(("author", author_fix(row.author)))
 
-        keyPaper = row.doi
-        typePaper = row.type  # TypePaperSelect(row.type)
-        print("Chave " + keyPaper + "               \r", end="", flush=True)
+        key_paper = row.doi
+        type_paper = row.type  # TypePaperSelect(row.type)
+        print("Chave " + key_paper + "               \r", end="", flush=True)
 
         if pd.isnull(row.author):
-            notAuthor = notAuthor + 1
+            not_author = not_author + 1
         else:
-            bibData.entries[keyPaper] = Entry(typePaper, fields)
+            bib_data.entries[key_paper] = Entry(type_paper, fields)
 
     print("Processed: ", total, "                             ")
-    print("Removed without author: ", notAuthor)
-    print("Total Final: ", len(bibData.entries))
+    print("Removed without author: ", not_author)
+    print("Total Final: ", len(bib_data.entries))
 
-    bibData.to_file(bibFileName)
-    print("Saved file: ", bibFileName)
+    bib_data.to_file(bib_file_name)
+    print("Saved file: ", bib_file_name)
 
 
 ap = argparse.ArgumentParser()
