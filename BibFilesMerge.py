@@ -227,14 +227,14 @@ def run(folder_path, file_list, file_name_out, exclude_list, log_process):
             "w",
             encoding="utf-8",
         )
-        csv_removed = csv.writer(f_removed, delimiter=";", quotechar='"')
+        csv_removed = csv.writer(f_removed, quotechar='"', quoting=csv.QUOTE_ALL)
         csv_removed.writerow(
             ["cause", "source", "key", "doi", "author", "year", "title", "publish"]
         )
         f_final = open(
             os.path.join(folder_path, "BibFilesMerge_final.csv"), "w", encoding="utf-8"
         )
-        csv_final = csv.writer(f_final, delimiter=";", quotechar='"')
+        csv_final = csv.writer(f_final, quotechar='"', quoting=csv.QUOTE_ALL)
         csv_final.writerow(
             ["key", "source", "doi", "author", "year", "title", "publish", "abstract"]
         )
