@@ -5,20 +5,20 @@
 * BibFilesMerge
 
 
-## Libraries
-You need install this (and others)
-* pip install pybtex
-* pip install pandas
-* pip install argparse
-* pip install unidecode  
+## Dependencies
 
+Run this command to install the dependencies:
+* pip install -r requirements.txt
 
 ## SpringerCsv2Bib
+
 Convert Springer CSV file to Bibtext file
 
-### RUN
-```
-python e:/GitHub/PyBibTextTools/SpringerCsv2Bib.py -husage: SpringerCsv2Bib.py [-h] -c CSVFILENAME -b BIBFILENAME
+### Run
+
+```console
+foo@bar:~$ python SpringerCsv2Bib.py -h
+usage: SpringerCsv2Bib.py [-h] -c CSVFILENAME -b BIBFILENAME
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -28,14 +28,17 @@ optional arguments:
                         BibText file name
 ```
 
-Example:   
-python e:/GitHub/PyBibTextTools/SpringerCsv2Bib.py -c "e:\Google Drive\Doutorado\Revisão Sistematica\resultados pesquisas\Springer.csv" -b "E:\Google Drive\Doutorado\Revisão Sistematica\resultados pesquisas\Springer.bib"
+### Example
 
->File founded:  e:\Google Drive\Doutorado\Revisão Sistematica\resultados pesquisas\Springer.csv   
->Processed  590   
->Removid without author  5   
->Total Final 585   
->Saved file  E:\Google Drive\Doutorado\Revisão Sistematica\resultados  pesquisas\Springer.bib  
+```console
+foo@bar:~$ python SpringerCsv2Bib.py -c "Springer.csv" -b "Springer.bib"
+
+File founded: Springer.csv
+Processed: 590
+Removid without author: 5
+Total Final: 585
+Saved file: Springer.bib
+```
 
 ## GetAbstract
 
@@ -45,11 +48,12 @@ Obs 1: ACM need use limit parameter, because ACM blocks if you get many abstract
 
 Obs 2: In my case, I use proxy, because I access in my house by proxy of my university.
 
-### RUN
-```
-python GetAbstract.py -h
-usage: GetAbstract.py [-h] -d {springer,acm,ieee} -f BIBFILENAME
-                      [--proxy PROXY] [-l LIMIT]
+### Run
+
+```console
+foo@bar:~$ python GetAbstract.py -h
+usage: GetAbstract.py [-h] -d {springer,acm,ieee} -f BIBFILENAME [-p PROXY]
+                      [-l LIMIT]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -57,97 +61,126 @@ optional arguments:
                         select database
   -f BIBFILENAME, --bibFileName BIBFILENAME
                         Springer bibFile name
-  --proxy PROXY         proxy, ex:
+  -p PROXY, --proxy PROXY
+                        internet proxy, ex:
                         https://john:password123@palmas.pucrs.br:4001
   -l LIMIT, --limit LIMIT
                         abstract load limit
 ```
 
-Example:
+### Example
 
-python GetAbstract.py -d acm -f "E:\Google Drive\Doutorado\Revisão Sistematica\resultados pesquisas\ACM.bib" -l 10 -p https://peter:mypass@palmas.pucrs.br:4001
+```console
+foo@bar:~$ python GetAbstract.py -d acm -f "ACM.bib" -l 10 -p https://peter:mypass@palmas.pucrs.br:4001
+
+Had Abstract: 85
+Url errors: 0
+Loaded Abstract: 10
+Total Entries: 585
+Limit to process: 10
+Processed: 95
+Left: 490
+```
 
 or
 
-python GetAbstract.py -d springer -f "E:\Google Drive\Doutorado\Revisão Sistematica\resultados pesquisas\Springer.bib"
+```console
+foo@bar:~$ python GetAbstract.py -d springer -f "Springer.bib"
 
->Had Abstract  85   
->Url errors  0   
->Loaded Abstract 10  
->Total Entries  585     
->Limit to process  10  
->Processed  95   
->Left  490   
+Had Abstract: 85
+Url errors: 0
+Loaded Abstract: 10
+Total Entries: 585
+Limit to process: 10
+Processed: 95
+Left: 490
+```
 
 ## BibFilesMerge
 
-Merge BibText files and:
+Merge BibTex files and:
 - remove duplicate entries 
 - in some cases merge information before removing duplicates
 - remove entries that not have:
     - author or
-    - title or 
-    - year or 
+    - title or
+    - year or
     - journal name or conference name
 
-This tool has been tested with digital library files:
-- ACM Digital Library     
-- IEEE Xplore             
-- Scopus                  
-- SpringerLink            
+This tool has been tested with these digital library files:
+- ACM Digital Library
+- IEEE Xplore
+- Scopus
+- SpringerLink
 - ScienceDirect - ElsevierWeb of Science
 - Web of Science (thanks [@dineiar](https://github.com/dineiar) for this)
 
+### Run
 
-
-### RUN
-```
-python BibFilesMerge.py -h
+```console
+foo@bar:~$ python BibFilesMerge.py -h
 usage: BibFilesMerge.py [-h] -p FOLDERPATH [-f [FILELIST [FILELIST ...]]]
-                        [-o FILENAMEOUT] [-l]
+                        [-o FILENAMEOUT] [-e [EXCLUDE [EXCLUDE ...]]] [-l]
 
 optional arguments:
   -h, --help            show this help message and exit
   -p FOLDERPATH, --folderPath FOLDERPATH
                         Bib files folder path
   -f [FILELIST [FILELIST ...]], --fileList [FILELIST [FILELIST ...]]
-                        bib file name list, e.g. -files IEEE.bib ACM.bib
+                        bib file name list, e.g. -f IEEE.bib ACM.bib
                         science.bib Springer.bib
   -o FILENAMEOUT, --fileNameOut FILENAMEOUT
                         File name of merged file
-  -l, --logProcess      List merged and final references to CSV files 
-                        on FOLDERPATH
+  -e [EXCLUDE [EXCLUDE ...]], --exclude [EXCLUDE [EXCLUDE ...]]
+                        bib with entries to be removed from others, e.g. -e
+                        FirstExecution.bib SecondExecution.bib
+  -l, --logProcess      Log processing to CSV files
 ```
 
-Example:
+### Example
 
-python BibFilesMerge.py -p "output_folder" -o MyFile.bib -f IEEE.bib ACM.bib science.bib Springer.bib scopus.bib -l
+```console
+foo@bar:~$ python BibFilesMerge.py -p output/ -o 2019-2.bib -f 2019-2/ScienceDirect1.bib 2019-2/ScienceDirect2.bib 2019-2/Scopus.bib -e 2018/ACM.bib 2018/IEEE.bib 2018/ScienceDirect.bib 2018/SCOPUS.bib 2019/ACM.bib 2019/IEEE.bib 2019/ScienceDirect1.bib 2019/ScienceDirect2.bib 2019/SCOPUS.bib -l
 
->Total  3253  
->without Author  65  
->without Year  0  
->without Jornal or conference or booktitle 76  
->Duplicates  842  merged  833  
->Final  2270  
->without Abstract  746  
+--folderPath     output/
+--fileNameOut    2019-2.bib
+--fileList       ['2019-2/ScienceDirect1.bib', '2019-2/ScienceDirect2.bib', '2019-2/Scopus.bib']
+--exclude        ['2018/ACM.bib', '2018/IEEE.bib', '2018/ScienceDirect.bib', '2018/SCOPUS.bib', '2019/ACM.bib', '2019/IEEE.bib', '2019/ScienceDirect1.bib', '2019/ScienceDirect2.bib', '2019/SCOPUS.bib']
+--logProcess     True
 
-The two CSV files created on `output_folder` by the `-l` switch are:
+2019-2/ScienceDirect1.bib
+2019-2/ScienceDirect2.bib                                  
+2019-2/Scopus.bib                                   
+                                                       
+Total:                   798
+No Author:               0
+No Year:                 0
+No Publisher:            0
+Duplicates:              31
+Merged:                  25
+Excluded from bib:       537
+Final:                   230
+without Abstract:        0 {'2019-2/ScienceDirect1.bib': 0, '2019-2/ScienceDirect2.bib': 0, '2019-2/Scopus.bib': 0}
+```
+
+The two CSV files created on `output` folder by the `-l` switch are:
 - `BibFilesMerge_removed.csv`, with columns cause, source, key, doi, author, year, title and publish
-    - cause is one of: no author, no year, no journal, duplicate of next or duplicate of prev
+- cause is one of: no author, no year, no journal, duplicate of next or duplicate of prev
 - `BibFilesMerge_final.csv`, with columns key, doi, author, year, title, publish and abstract
 
 ### Load Bib File Error
 
-Sometimes errors occur while reading the bib file.   
-In this case, note at the end of the error line of the bib file.   
-Then edit the bib file and adjust the error.   
+Sometimes errors occur while reading the bib file. In this case, note at the end of the error line of the bib file. Then edit the bib file and adjust the error. For example:
 
-**Error, see the last line**:
-```
-python BibFilesMerge.py -p "E:\Google Drive\Doutorado\Revisão Sistematica\resultados pesquisas" -f IEEE.bib ACM.bib science.bib Springer.bib -o "MyFile.bib"
--p  E:\Google Drive\Doutorado\Revisão Sistematica\resultados pesquisas
--o  MyFile.bib
--f  ['IEEE.bib', 'ACM.bib', 'science.bib', 'Springer.bib']
+```console
+foo@bar:~$ python BibFilesMerge.py -p results -f IEEE.bib ACM.bib science.bib Springer.bib -o MyFile.bib
+
+--folderPath     results
+--fileNameOut    MyFile.bib
+--fileList       ['IEEE.bib', 'ACM.bib', 'science.bib', 'Springer.bib']
+--exclude        None
+--logProcess     False
+
 IEEE.bib
 ACM.bib
 science.bib
@@ -189,6 +222,6 @@ pybtex.scanner.TokenRequired: syntax error in line 2264: '}' expected
 
 > 2264 note = "Special issue on Assistive Computer Vision and Robotics - "Assistive Solutions for Mobility, Communication and HMI" ",
 
-you need fix to 
+**just fix it to**: 
 
 > 2264 note = "Special issue on Assistive Computer Vision and Robotics - Assistive Solutions for Mobility, Communication and HMI",

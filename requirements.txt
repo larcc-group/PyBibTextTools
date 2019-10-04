@@ -1,0 +1,4 @@
+pybtex
+pandas
+argparse
+unidecode
