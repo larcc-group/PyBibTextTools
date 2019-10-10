@@ -188,6 +188,7 @@ def is_duplicated(entry_out, entry, verify_doi=False):
 
 
 def custom_parse_file(file_bib):
+    print(file_bib, " " * 30)
     loop = True
     while loop:
         loop = False
@@ -250,14 +251,15 @@ def run(folder_path, file_list, file_name_out, exclude_list, log_process):
     duplicates = 0
     excluded_from_bib = 0
 
-    bib_dato_to_exclude = {}
+    bib_data_to_exclude = {}
 
     for bib_file_name in file_list:
         bib_data = custom_parse_file(bib_file_name)
         print(
+            "-" * 3,
             bib_file_name + ":",
             len(bib_data.entries.values()),
-            "                                             ",
+            " " * 30,
         )
 
         for entry in bib_data.entries.values():
@@ -271,13 +273,13 @@ def run(folder_path, file_list, file_name_out, exclude_list, log_process):
 
             found_entry_to_exclude = False
             for bib_file_name_exclude in exclude_list:
-                if bib_file_name_exclude not in bib_dato_to_exclude:
+                if bib_file_name_exclude not in bib_data_to_exclude:
                     bib_data = custom_parse_file(bib_file_name_exclude)
-                    bib_dato_to_exclude[
+                    bib_data_to_exclude[
                         bib_file_name_exclude
                     ] = bib_data.entries.values()
 
-                for entry_exclude in bib_dato_to_exclude[bib_file_name_exclude]:
+                for entry_exclude in bib_data_to_exclude[bib_file_name_exclude]:
                     if is_duplicated(entry_exclude, entry):
                         excluded_from_bib += 1
                         found_entry_to_exclude = True
@@ -339,7 +341,7 @@ def run(folder_path, file_list, file_name_out, exclude_list, log_process):
                     )
             else:
                 key = entry.key.lower()
-                print("Key " + key + "                        \r", end="", flush=True)
+                print("Key " + key + " " * 30 + "\r", end="", flush=True)
 
                 entry.fields["source"] = bib_file_name
                 old_entry = None
@@ -391,7 +393,7 @@ def run(folder_path, file_list, file_name_out, exclude_list, log_process):
                         key = key + "_a"
                     bib_data_out.entries[key] = entry
 
-    print("                                                     ")
+    print(" " * 50)
     print("Total:\t\t\t", total)
 
     print("No Author:\t\t", without_author)
@@ -456,6 +458,7 @@ ap.add_argument(
     "-e",
     "--exclude",
     nargs="*",
+    default=[],
     required=False,
     help=" bib with entries to be removed from others, e.g. -e FirstExecution.bib SecondExecution.bib",
 )
