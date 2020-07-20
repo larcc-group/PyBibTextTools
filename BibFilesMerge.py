@@ -1,22 +1,17 @@
-#!/usr/bin/env python3
-
 import os
-import sys
-
-sys.path.insert(0, "./pybtex/")
-
-from pybtex.database import parse_file, parse_string
-from pybtex.database import BibliographyData, Entry, BibliographyDataError
-import random
-import unidecode
-import argparse
-import csv
-from html import unescape
 import shutil
+import sys
+from html import unescape
+import csv
+import argparse
+import unidecode
+import random
+sys.path.insert(0, "./pybtex/")
+from pybtex.database import BibliographyData, Entry, BibliographyDataError
+from pybtex.database import parse_file, parse_string
 
 
 merged_count = 0
-
 
 def merge_entry(original, novo):
     global merged_count
@@ -46,7 +41,8 @@ def merge_entry(original, novo):
     if merged:
         merged_count += 1
 
-    original.fields["source"] = original.fields["source"] + ";" + novo.fields["source"]
+    original.fields["source"] = original.fields["source"] + \
+        ";" + novo.fields["source"]
 
     return original
 
@@ -196,7 +192,8 @@ def custom_parse_file(file_bib):
             bib_data = parse_file(file_bib)
             return bib_data
         except BibliographyDataError as ex:
-            repeated_key = ex.args[0].replace("repeated bibliograhpy entry: ", "")
+            repeated_key = ex.args[0].replace(
+                "repeated bibliograhpy entry: ", "")
 
             if not os.path.isfile(file_bib + ".bkp"):
                 shutil.copyfile(file_bib, file_bib + ".bkp")
@@ -207,7 +204,8 @@ def custom_parse_file(file_bib):
 
                 while file_data.find(repeated_key + ",") > -1:
                     new_key = repeated_key + "_" + str(random.randint(1, 101))
-                    file_data = file_data.replace(repeated_key + ",", new_key + ",", 1)
+                    file_data = file_data.replace(
+                        repeated_key + ",", new_key + ",", 1)
 
                     print(
                         file_bib + ": repeatedKey", repeated_key, "replaced by", new_key
@@ -228,7 +226,8 @@ def run(folder_path, file_list, file_name_out, exclude_list, log_process):
             "w",
             encoding="utf-8",
         )
-        csv_removed = csv.writer(f_removed, quotechar='"', quoting=csv.QUOTE_ALL)
+        csv_removed = csv.writer(
+            f_removed, quotechar='"', quoting=csv.QUOTE_ALL)
         csv_removed.writerow(
             ["cause", "source", "key", "doi", "author", "year", "title", "publish"]
         )
@@ -237,7 +236,8 @@ def run(folder_path, file_list, file_name_out, exclude_list, log_process):
         )
         csv_final = csv.writer(f_final, quotechar='"', quoting=csv.QUOTE_ALL)
         csv_final.writerow(
-            ["key", "source", "doi", "author", "year", "title", "publish", "abstract"]
+            ["key", "source", "doi", "author", "year",
+                "title", "publish", "abstract"]
         )
 
     file_name_path_out = os.path.join(folder_path, file_name_out)
@@ -387,7 +387,8 @@ def run(folder_path, file_list, file_name_out, exclude_list, log_process):
                             ]
                         )
 
-                    bib_data_out.entries[old_entry.key] = merge_entry(old_entry, entry)
+                    bib_data_out.entries[old_entry.key] = merge_entry(
+                        old_entry, entry)
                 else:
                     while key in bib_data_out.entries.keys():
                         key = key + "_a"
@@ -437,7 +438,7 @@ def run(folder_path, file_list, file_name_out, exclude_list, log_process):
             )
 
     print("Without Abstract:\t", without_abstract, without_abstract_list)
-    bib_data_out.to_file(file_name_path_out)
+    bib_data_out.to_file(file_name_path_out, bib_format="bibtex")
 
     if log_process:
         f_removed.close()
@@ -445,7 +446,8 @@ def run(folder_path, file_list, file_name_out, exclude_list, log_process):
 
 
 ap = argparse.ArgumentParser()
-ap.add_argument("-p", "--folderPath", required=True, help="Bib files folder path")
+ap.add_argument("-p", "--folderPath", required=True,
+                help="Bib files folder path")
 ap.add_argument(
     "-f",
     "--fileList",
@@ -453,7 +455,8 @@ ap.add_argument(
     required=False,
     help="bib file name list, e.g. -f IEEE.bib ACM.bib science.bib Springer.bib",
 )
-ap.add_argument("-o", "--fileNameOut", required=False, help="File name of merged file")
+ap.add_argument("-o", "--fileNameOut", required=False,
+                help="File name of merged file")
 ap.add_argument(
     "-e",
     "--exclude",

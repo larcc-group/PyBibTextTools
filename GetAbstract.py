@@ -1,20 +1,17 @@
 import os
 import sys
-
-sys.path.insert(0, "./pybtex/")
-from pybtex.database import parse_file
-from pybtex.database import BibliographyData, Entry
-
-import unidecode
-import urllib.request
-from html.parser import HTMLParser
-from urllib.request import Request, urlopen
-import re
 import argparse
+import re
+from urllib.request import Request, urlopen
+from html.parser import HTMLParser
+import urllib.request
+import unidecode
+sys.path.insert(0, "./pybtex/")
+from pybtex.database import BibliographyData, Entry
+from pybtex.database import parse_file
 
 
 def run(database, bib_file_name, proxy, limit):
-
     print("=========================================")
     print("DATABASE ", database, limit)
     print("=========================================")
@@ -55,7 +52,8 @@ def run(database, bib_file_name, proxy, limit):
                 site = site + entry.key
 
             elif database == "acm":
-                site = "https://dl.acm.org/tab_abstract.cfm?id=" + entry.fields["acmid"]
+                site = "https://dl.acm.org/tab_abstract.cfm?id=" + \
+                    entry.fields["acmid"]
 
             elif database == "ieee":
                 site = "https://ieeexplore.ieee.org/document/" + entry.key + "/"
@@ -63,7 +61,8 @@ def run(database, bib_file_name, proxy, limit):
             try:
                 if not proxy == None:
                     # Use proxy.
-                    proxy_handler = urllib.request.ProxyHandler({"https": proxy})
+                    proxy_handler = urllib.request.ProxyHandler(
+                        {"https": proxy})
                     opener = urllib.request.build_opener(proxy_handler)
                     urllib.request.install_opener(opener)
 
@@ -76,9 +75,11 @@ def run(database, bib_file_name, proxy, limit):
                         '<strong class="EmphasisTypeBold ">Abstract.</strong>'
                     )
                     if inicio == -1:
-                        inicio = html_text.find('<h2 class="Heading">Abstract</h2>')
+                        inicio = html_text.find(
+                            '<h2 class="Heading">Abstract</h2>')
                     if inicio == -1:
-                        inicio = html_text.find('<h2 class="Heading">Abstract.</h2>')
+                        inicio = html_text.find(
+                            '<h2 class="Heading">Abstract.</h2>')
                     if inicio == -1:
                         inicio = html_text.find("Abstract")
 
@@ -136,7 +137,7 @@ def run(database, bib_file_name, proxy, limit):
     if processed < len(bib_data.entries):
         print("Left: ", len(bib_data.entries) - processed)
 
-    bib_data.to_file(bib_file_name)
+    bib_data.to_file(bib_file_name, bib_format="bibtex")
 
 
 ap = argparse.ArgumentParser()
@@ -147,7 +148,8 @@ ap.add_argument(
     required=True,
     help="select database",
 )
-ap.add_argument("-f", "--bibFileName", required=True, help="Springer bibFile name")
+ap.add_argument("-f", "--bibFileName", required=True,
+                help="Springer bibFile name")
 
 ap.add_argument(
     "-p",

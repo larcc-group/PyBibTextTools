@@ -1,31 +1,19 @@
 import os
 import sys
-
-sys.path.insert(0, "./pybtex/")
-from pybtex.database import parse_file, parse_string
-from pybtex.database import BibliographyData, Entry, Person
-
-import io
-import csv
-import pandas as pd
-import argparse
-import unidecode
-from shutil import copyfile
 import tempfile
-
-# Unnecessary function.
-# def TypePaperSelect(type_tmp):
-#     typePaper = "InProceedings"
-#     if type_tmp == "Article":
-#         typePaper = "article"
-#     elif type_tmp == "Chapter":
-#         typePaper = "InProceedings"
-#     return type_tmp
+from shutil import copyfile
+import unidecode
+import argparse
+import pandas as pd
+import csv
+import io
+sys.path.insert(0, "./pybtex/")
+from pybtex.database import BibliographyData, Entry, Person
+from pybtex.database import parse_file, parse_string
 
 
 def author_fix(author_tmp):
     # Problems with Spring CSV.
-
     """
     "Sergey Ablameyko PhD, DSc, Prof, FIEE, FIAPR, SMIEEETony Pridmore BSc, PhD"
     correct is
@@ -117,7 +105,7 @@ def run(csv_file_name, bib_file_name):
     print("Removed without author: ", not_author)
     print("Total Final: ", len(bib_data.entries))
 
-    bib_data.to_file(bib_file_name)
+    bib_data.to_file(bib_file_name, bib_format="bibtex")
     print("Saved file: ", bib_file_name)
 
 
